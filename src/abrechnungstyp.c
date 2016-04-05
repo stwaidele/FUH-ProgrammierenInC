@@ -31,7 +31,7 @@ void abrechnungstypDestructor(abrechnungstyp *a) {
 }
 
 char *displayAbrechnung(abrechnungstyp *a) {
-	char output[15];
+	char *output;
 
 	return output;
 }
