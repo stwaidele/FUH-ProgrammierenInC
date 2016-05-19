@@ -3,6 +3,9 @@
  *
  *  Created on: 04.04.2016
  *      Author: stwaidele
+ *
+ *  Der Datentyp „vertragstyp“ bildet die geschlossenen Versicherungsverträge
+ *  ab.
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,7 +43,10 @@ void zahlungsplan(vertragstyp *v) {
 				/ v->GesamtAnzahlZahlungen;
 	}
 
-	// Erste Abrechnung
+	/*
+	 * Erste Abrechnung
+	 * mit initialisierung der verknüpften Liste
+	 */
 	current = malloc(sizeof(*current));
 	current->Betrag = betragProAbrechnung;
 	v->OffeneZahlungenQueue = current;
@@ -49,6 +55,12 @@ void zahlungsplan(vertragstyp *v) {
 	// Alle weiteren Abrechnungen
 	int z = 1;
 	while (z < v->GesamtAnzahlZahlungen) {
+		/*
+		 * Schleife von 1  da die erste Zahlung (Nr. 0) bereits gespeichert ist.
+		 * Nach dem letzten Schleifendurchlauf ist der Betrag entweder
+		 * korrekt (falls jede Zahlung gleich groß ist,
+		 * oder inkorrekt (falls die letzte Zahlung kleiner ist).
+		 */
 		current = malloc(sizeof(*current));
 		// ToDo: Fälligkeitsdatum berechnen
 		current->Betrag = betragProAbrechnung;
@@ -56,5 +68,9 @@ void zahlungsplan(vertragstyp *v) {
 		prev = current;
 		z++;
 	}
+	/*
+	 * Korrektur des letzten Zahlbetrags.
+	 * Evt. nicht notwendig, aber nie schädlich.
+	 */
 	current->Betrag = restBetrag;
 }

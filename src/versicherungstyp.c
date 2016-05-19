@@ -3,6 +3,14 @@
  *
  *  Created on: 03.04.2016
  *      Author: stwaidele
+ *
+ *  Der Datentyp „versicherungstyp“ bildet das Versicherungsunternehmen
+ *  ab. Hier werden alle Daten gespeichert, die Unternehmensweit benötigt werden.
+ *
+ *  Die Versicherungsverträge werden hier ebenfalls gespeichert.
+ *  In der gegebenen Aufgabenstellung wird nur eine „Instanz“ vom Typ
+ *  „versicherungstyp“ benötigt.
+ *
  */
 
 #include <stdlib.h>
@@ -15,7 +23,7 @@
 
 #include "versicherungstyp.h"
 
-void versicherungstypInitialize(versicherungstyp *vers) {
+void versicherungstypConstructor(versicherungstyp *vers) {
 	/*
 	 * Hier werden die Werte aus der Datei gelesen bzw. eine leere „Instanz“ initialisiert.
 	 */
@@ -24,7 +32,9 @@ void versicherungstypInitialize(versicherungstyp *vers) {
 	vers->currentVertragsID = 0;
 	vers->sizeOfVertragArray = INITIAL_SIZE_OF_VERTRAG_ARRAY;
 	vers->Vertrag = malloc(INITIAL_SIZE_OF_VERTRAG_ARRAY * sizeof(*vertrag));
-	;
+	if (vers->Vertrag==0){
+		printf("malloc fehlgeschlagen!\n");
+	}
 	vers->i = 0;
 }
 

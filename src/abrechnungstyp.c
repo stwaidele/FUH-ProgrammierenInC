@@ -26,7 +26,7 @@ abrechnungstyp *abrechnungstypConstructor(int b, char m, int j) {
 }
 
 void abrechnungstypDestructor(abrechnungstyp *a) {
-	// ToDo: funktioniert nicht!
+	// ToDo: funktioniert nicht! Warum?
 	// free(&a);
 }
 

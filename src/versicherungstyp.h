@@ -22,6 +22,6 @@ typedef struct {
 
 // Funktionsprototypen
 int getNextVertragsID(versicherungstyp *);
-void versicherungstypInitialize(versicherungstyp *);
+void versicherungstypConstructor(versicherungstyp *);
 
 #endif /* VERSICHERUNGSTYP_H_ */
