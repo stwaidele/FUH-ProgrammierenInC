@@ -15,12 +15,40 @@
 #include <stddef.h>
 #include <string.h>
 
-#define INITIAL_SIZE_OF_VERTRAG_ARRAY 10
-#define MAX_ZAHLUNGEN 20
+/*
+ *  #include "abrechnungstyp.h"
+ */
 
+// Datentypen
 enum zahlstatus {
-	offen, faellig, bezahlt
+	offen, feallig, bezahlt
 };
+
+typedef struct abrechnungstyp {
+	unsigned int Betrag;		// http://martinfowler.com/eaaDev/quantity.html
+	unsigned char FaelligMonat;		// 1 - 12
+	unsigned int FaelligJahr;		// ...wir haben ein Jahr-65.536-Problem...
+	enum zahlstatus Status;
+	struct abrechnungstyp *next;	// Einfach verlinkte Liste
+} abrechnungstyp;
+
+// Funktionsprototypen
+abrechnungstyp *abrechnungstypConstructor(int Betrag, char FaelligMonat,
+		int FaelligJahr);
+void abrechnungstypDestructor(abrechnungstyp *);
+bool istFaellig(abrechnungstyp *);
+bool istBezahlt(abrechnungstyp *);
+bool istOffen(abrechnungstyp *);
+/*
+ * Ende: abrechnungstyp.h
+ */
+
+
+/*
+ *  #include "vertragstyp.h"
+ */
+// Datentypen
+
 enum zahlungsmodus {
 	jaehrlich = 1, halbjaehrlich = 2, vierteljaehrlich = 4
 };
@@ -43,20 +71,11 @@ enum monate {
 	dezember = 12
 };
 
-typedef struct abrechnungstyp {
-	unsigned int Betrag;		// http://martinfowler.com/eaaDev/quantity.html
-	unsigned char FaelligMonat;		// 1 - 12
-	unsigned int FaelligJahr;		// ...wir haben ein Jahr-65.536-Problem...
-	enum zahlstatus Status;
-} abrechnungstyp;
-
-
 typedef struct {
 	unsigned int VertragsID;
 	char Name[25];
 	char Vorname[25];
 	char Strasse[25];
-	char Hausnummer[5];
 	char PLZ[10];				// https://de.wikipedia.org/wiki/Postleitzahl
 	char Ort[25];
 	char Land[25];// https://de.wikipedia.org/wiki/L%C3%A4ndercodes_im_Briefdienst
@@ -66,9 +85,20 @@ typedef struct {
 	enum monate AbschlussMonat;		// 1 - 12
 	unsigned int AbschlussJahr;		// ...wir haben ein Jahr-65.536-Problem...
 	unsigned char GesamtAnzahlZahlungen; // = Laufzeit * Zahlungsmodus
-	abrechnungstyp Abrechnungen[MAX_ZAHLUNGEN]; // 5 Jahre * 4 Zahlungen pro Jahr => max. 20 Abrechnungen
+	abrechnungstyp *GeleisteteZahlungenQueue;	//
+	abrechnungstyp *OffeneZahlungenQueue; 		//
 } vertragstyp;
 
+/*
+ *  Ende: vertragstyp.h
+ */
+
+/*
+ *  #include "versicherungstyp.h"
+ */
+#define INITIAL_SIZE_OF_VERTRAG_ARRAY 10
+
+// Datentypen
 typedef struct {
 	unsigned int currentVertragsID;
 	unsigned int sizeOfVertragArray;
@@ -76,30 +106,72 @@ typedef struct {
 	vertragstyp *Vertrag;
 } versicherungstyp;
 
-/*
- * Prototypen
- */
+// Funktionsprototypen
 int getNextVertragsID(versicherungstyp *);
+void versicherungstypConstructor(versicherungstyp *);
 
+/*
+ *  Ende: versicherungstyp.h
+ */
+
+/*
+ * Implementation "abrechnungstyp"
+ */
+
+abrechnungstyp *abrechnungstypConstructor(int b, char m, int j) {
+	abrechnungstyp *a = malloc(sizeof(*a));
+	if (a) {
+		a->Betrag = b;
+		a->FaelligMonat = m;
+		a->FaelligJahr = j;
+		a->Status = offen;
+	} else {
+		// ToDo: Fehlermeldung ausgeben
+	}
+
+	return a;
+}
+
+void abrechnungstypDestructor(abrechnungstyp *a) {
+	// ToDo: funktioniert nicht! Warum?
+	// free(&a);
+}
+
+char *displayAbrechnung(abrechnungstyp *a) {
+	char *output = "";
+
+	return output;
+}
+
+bool istFaellig(abrechnungstyp *a) {
+	return (a->Status == feallig);
+}
+bool istBezahlt(abrechnungstyp *a) {
+	return (a->Status == bezahlt);
+}
+bool istOffen(abrechnungstyp *a) {
+	return (a->Status == offen);
+}
+
+/*
+ * Implementation: "vertragstyp"
+ */
 
 vertragstyp *vertragstypConstructor(versicherungstyp *vers) {
 	vertragstyp *v = malloc(sizeof(*v));
 	v->VertragsID = getNextVertragsID(vers);
-	for(int i=0; i<MAX_ZAHLUNGEN; i++) {
-		v->Abrechnungen[i].Betrag = 0;
-		v->Abrechnungen[i].FaelligJahr = 0;
-		v->Abrechnungen[i].FaelligMonat = 0;
-		v->Abrechnungen[i].Status = offen;
-	}
+	v->OffeneZahlungenQueue = NULL;
+	v->GeleisteteZahlungenQueue = NULL;
 	return v;
 }
 
 void zahlungsplan(vertragstyp *v) {
+	abrechnungstyp *current;
+	abrechnungstyp *prev;
+
 	int betragProAbrechnung;
 	int restBetrag;
-	/*
-	 * Zahlbeträge ermitteln
-	 */
+
 	if ((v->Jahresbeitrag * v->Laufzeit) % v->GesamtAnzahlZahlungen) {
 		// Division mit Rest: Beträge so festlegen, dass die Abschlussrate die kleinste Rate ist.
 		betragProAbrechnung = 1
@@ -113,36 +185,40 @@ void zahlungsplan(vertragstyp *v) {
 	}
 
 	/*
-	 * Zahlbeträge & Fälligkeiten zuweisen
+	 * Erste Abrechnung
+	 * mit initialisierung der verknüpften Liste
 	 */
-	int monat, jahr, delta;
-	jahr = v->AbschlussJahr;
-	monat = v->AbschlussMonat - 1; // Um 1 reduziert, da Abschlussmonat erster Monat im Abrechnungszeitraum
-	delta = 12 / v->Zahlungsmodus;
+	current = malloc(sizeof(*current));
+	current->Betrag = betragProAbrechnung;
+	v->OffeneZahlungenQueue = current;
+	prev = current;
 
-	int z = 0;
+	// Alle weiteren Abrechnungen
+	int z = 1;
 	while (z < v->GesamtAnzahlZahlungen) {
-		monat += delta;	//Monat um "Delta" erhöhen
-		if (monat>12) { // Überlauf…
-			monat -= 12; // …Monat verringern
-			jahr++;	// …Jahr hochzählen
-		}
-		v->Abrechnungen[z].Betrag = betragProAbrechnung;
-		v->Abrechnungen[z].FaelligMonat = monat;
-		v->Abrechnungen[z].FaelligJahr = jahr;
-		v->Abrechnungen[z].Status = offen;
+		/*
+		 * Schleife von 1  da die erste Zahlung (Nr. 0) bereits gespeichert ist.
+		 * Nach dem letzten Schleifendurchlauf ist der Betrag entweder
+		 * korrekt (falls jede Zahlung gleich groß ist,
+		 * oder inkorrekt (falls die letzte Zahlung kleiner ist).
+		 */
+		current = malloc(sizeof(*current));
+		// ToDo: Fälligkeitsdatum berechnen
+		current->Betrag = betragProAbrechnung;
+		prev->next = current;
+		prev = current;
 		z++;
 	}
 	/*
-	 * Nach dem letzten Schleifendurchlauf ist der Betrag entweder
-	 * korrekt (falls jede Zahlung gleich groß ist,
-	 * oder inkorrekt (falls die letzte Zahlung kleiner ist).
-	 *
-	 * Korrektur des letzten Zahlbetrags ist somit
-	 * evt. nicht notwendig, aber nie schädlich.
+	 * Korrektur des letzten Zahlbetrags.
+	 * Evt. nicht notwendig, aber nie schädlich.
 	 */
-	v->Abrechnungen[z-1].Betrag = restBetrag;
+	current->Betrag = restBetrag;
 }
+
+/*
+ * Implementierung "versicherungstyp"
+ */
 
 void versicherungstypConstructor(versicherungstyp *vers) {
 	/*
@@ -160,7 +236,6 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 }
 
 unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
-	// ToDo: Auf existierenden Kunden prüfen
 	if (vers->i >= vers->sizeOfVertragArray) {
 		// Array vergrößern: http://stackoverflow.com/questions/4694401/how-to-replicate-vector-in-c
 		void* newMem = realloc(vers->Vertrag,
@@ -211,11 +286,11 @@ void vertragErfassen(versicherungstyp *vers) {
 			scanf("%s", meinVertrag->Ort);
 			printf("Land: ");
 			scanf("%s", meinVertrag->Land);
-			printf("Jahresbeitrag in ¢: ");
+			printf("Jahresbeitrag: ");
 			scanf("%d", &meinVertrag->Jahresbeitrag);
 
 			bool inputOK = false;
-			int i;
+			char i;
 			do {
 				printf("Zahlungsmodus (1: jährlich / 2: halbjährlich / 4: vierteljährlich): ");
 				scanf("%d", &i);
@@ -293,12 +368,10 @@ void vertragAnzeigen(versicherungstyp *vers) {
 					vers->Vertrag[c].AbschlussMonat,
 					vers->Vertrag[c].AbschlussJahr,
 					vers->Vertrag[c].GesamtAnzahlZahlungen);
-			for(int i=0; i<MAX_ZAHLUNGEN; i++) {
-				if(vers->Vertrag[c].Abrechnungen[i].Betrag>0) {
-					printf("%2d/%4d: %d¢, ", vers->Vertrag[c].Abrechnungen[i].FaelligMonat,
-											 vers->Vertrag[c].Abrechnungen[i].FaelligJahr,
-											 vers->Vertrag[c].Abrechnungen[i].Betrag);
-				}
+			abrechnungstyp *a = vers->Vertrag[c].OffeneZahlungenQueue;
+			while (a != NULL) {
+				printf("%5i, ", a->Betrag);
+				a = a->next;
 			}
 			printf("\n");
 			ausgegeben = true;
@@ -310,209 +383,16 @@ void vertragAnzeigen(versicherungstyp *vers) {
 }
 
 void kundenlisteAnzeigen(versicherungstyp *vers) {
-	printf("\nKundenliste anzeigen\n");
-	printf("--------------------\n");
-
-	vertragstyp *vertrag; // Benötigt für sizeof() ToDo: Wirklich?
-	int size = sizeof(*vertrag); // Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
-
-	char *temp;
-	char *kunden[vers->i][size];
-	temp = malloc(size+1);
-	/*
-	 * Kundenliste erzeugen
-	 */
-	for(int i=0; i<vers->i; i++) {
-		snprintf(temp, size,"%s, %s, Vertrag #%d, %s %s, %s %s %s, seit %02d.%04d, %d¢pro Jahr.", vers->Vertrag[i].Name,
-												  vers->Vertrag[i].Vorname,
-												  vers->Vertrag[i].VertragsID,
-												  vers->Vertrag[i].Strasse,
-												  vers->Vertrag[i].Hausnummer,
-												  vers->Vertrag[i].PLZ,
-												  vers->Vertrag[i].Ort,
-												  vers->Vertrag[i].Land,
-												  vers->Vertrag[i].AbschlussMonat,
-												  vers->Vertrag[i].AbschlussJahr,
-												  vers->Vertrag[i].Jahresbeitrag
-				);
-		strcpy(kunden[i], temp);
-	}
-	/*
-	 * Kundenliste sortieren
-	 * Bubblesort mit Dreieckstausch,
-	 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
-	 */
-
-	   for (int i = 0; i < vers->i; i++) {
-	      for (int j = 0; j < vers->i - 1; j++) {
-	         if (strcmp(kunden[j], kunden[j + 1]) > 0) {
-	            strcpy(temp, kunden[j]);
-	            strcpy(kunden[j], kunden[j + 1]);
-	            strcpy(kunden[j + 1], temp);
-	         }
-	      }
-	   }
-
-	/*
-	 * Kundenliste ausgeben
-	 */
-	for(int i=0; i<vers->i; i++) {
-		printf("%s\n", kunden[i]);
-	}
-	free(temp);
-	// free(kunden);
+	printf("Kundenliste anzeigen\n");
 }
-
 void beitragslisteAnzeigen(versicherungstyp *vers) {
-	printf("\nBeitragsliste anzeigen\n");
-	printf("----------------------\n");
-
-	vertragstyp *vertrag; // Benötigt für sizeof() ToDo: Wirklich?
-	int size = sizeof(*vertrag); // Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
-
-	char *temp;
-	char *beitraege[(vers->i)*20][size]; // Maximal 20 Beiträge pro Versicherung können fällig sein. (Ende der Vertragslaufzeit, keine geleisteten Zahlungen)
-	temp = malloc(size+1);
-
-	/*
-	 * Monat und Jahr zur Fälligkeitsbestimmung einlesen
-	 */
-	bool inputOK = false;
-	enum monate monat;		// 1 - 12
-	unsigned int jahr;		// ...wir haben ein Jahr-65.536-Problem...
-
-	do {
-		printf("Bewertung zum Datum - Monat (1…12): ");
-		scanf("%d", &monat);
-		if ((monat <= 12) && (monat >= 1)) {
-			inputOK = true;
-		} else {
-			printf("Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
-			inputOK=false;
-		}
-	} while(!inputOK);
-
-	printf("Bewertung zum Datum - Jahr: ");
-	scanf("%d", &jahr);
-
-	/*
-	 * Beitragsliste erzeugen
-	 */
-	for(int i=0; i<vers->i; i++) {
-		for(int j=0; j<20; j++) {
-			if( (vers->Vertrag[i].Abrechnungen[j].Betrag > 0)
-				&& (vers->Vertrag[i].Abrechnungen[j].FaelligJahr == jahr )
-				&& (vers->Vertrag[i].Abrechnungen[j].FaelligMonat == monat )
-				&& (vers->Vertrag[i].Abrechnungen[j].Status != bezahlt )
-			  ) {
-				snprintf(temp, size,"Vertrag #%d, %s, %s, %d¢.",
-												  vers->Vertrag[i].VertragsID,
-												  vers->Vertrag[i].Name,
-												  vers->Vertrag[i].Vorname,
-												  vers->Vertrag[i].Abrechnungen[j].Betrag
-						);
-				strcpy(beitraege[i], temp);
-			}
-		}
-	}
-	/*
-	 * Beitragsliste sortieren
-	 * Bubblesort mit Dreieckstausch,
-	 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
-	 */
-
-	   for (int i = 0; i < vers->i; i++) {
-	      for (int j = 0; j < vers->i - 1; j++) {
-	         if (strcmp(beitraege[j], beitraege[j + 1]) > 0) {
-	            strcpy(temp, beitraege[j]);
-	            strcpy(beitraege[j], beitraege[j + 1]);
-	            strcpy(beitraege[j + 1], temp);
-	         }
-	      }
-	   }
-
-	/*
-	 * Beitragsliste ausgeben
-	 */
-	for(int i=0; i<vers->i; i++) {
-		if (strlen(beitraege[i])>0) {
-			printf("%s\n", beitraege[i]);
-		}
-	}
-	free(temp);
+	printf("Beitragsliste anzeigen\n");
 }
-
 void zahlungErfassen(versicherungstyp *vers) {
-	printf("\nZahlung erfassen\n");
-
-	int vnum;
-	bool vertragGefunden = false;
-	bool abrechnungGefunden = false;
-	enum monate monat = 0;		// 1 - 12
-	unsigned int jahr = 0;		// ...wir haben ein Jahr-65.536-Problem...
-
-	printf("Bitte geben Sie die Vertragsnummer ein (1…%d): ", vers->i);
-	scanf("%i", &vnum);
-
-	for (int i = 0; i < vers->i; i++) {
-		if (vers->Vertrag[i].VertragsID == vnum) {
-			vertragGefunden = true;
-
-			/*
-			 * Monat und Jahr zur Fälligkeitsbestimmung einlesen
-			 */
-			bool inputOK = false;
-
-			do {
-				printf("Zahlung zum Datum - Monat (1…12): ");
-				scanf("%d", &monat);
-				if ((monat <= 12) && (monat >= 1)) {
-					inputOK = true;
-				} else {
-					printf(
-							"Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
-					inputOK = false;
-				}
-			} while (!inputOK);
-
-			printf("Zahlung zum Datum - Jahr: ");
-			scanf("%d", &jahr);
-
-			for (int j = 0; j < 20; j++) {
-				if ((vers->Vertrag[i].Abrechnungen[j].Betrag > 0)
-						&& (vers->Vertrag[i].Abrechnungen[j].FaelligJahr == jahr)
-						&& (vers->Vertrag[i].Abrechnungen[j].FaelligMonat
-								== monat)) {
-					abrechnungGefunden = true;
-					if (vers->Vertrag[i].Abrechnungen[j].Status == bezahlt) {
-						printf(
-								"Zahlung für Vertrag %d in %2d.%4d war bereits geleistet.\nKEINE BUCHUNG DURCHGEFÜHRT.\n",
-								vers->Vertrag[i].VertragsID,
-								vers->Vertrag[i].Abrechnungen[j].FaelligMonat,
-								vers->Vertrag[i].Abrechnungen[j].FaelligJahr);
-					} else {
-						vers->Vertrag[i].Abrechnungen[j].Status = bezahlt;
-						printf(
-								"Zahlung für Vertrag %d in %2d.%4d durchgeführt.\n",
-								vnum, monat, jahr);
-					}
-				}
-			}
-			if (!abrechnungGefunden) {
-						printf(
-								"Keine vorgesehene Zahlung für Vertrag %d in %2d.%4d.\nKEINE BUCHUNG DURCHGEFÜHRT.\n",
-								vnum, monat, jahr);
-			}
-		}
-
-	}
-	if (!vertragGefunden) {
-		printf("Kein Vertrag mit Nummer %d gefunden.\n", vnum);
-	}
+	printf("Zahlung erfassen\n");
 }
-
 void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
-	printf("\nAbgelaufene Verträge löschen\n");
+	printf("Abgelaufene Verträge löschen\n");
 }
 
 /*
@@ -534,8 +414,7 @@ void test(versicherungstyp *vers) {
 	if (meinVertrag) {
 		strcpy(meinVertrag->Name, "Waidele");
 		strcpy(meinVertrag->Vorname, "Stefan");
-		strcpy(meinVertrag->Strasse, "Ensisheimer Straße");
-		strcpy(meinVertrag->Hausnummer, "2");
+		strcpy(meinVertrag->Strasse, "Ensisheimer Straße 2");
 		strcpy(meinVertrag->PLZ, "79395");
 		strcpy(meinVertrag->Ort, "Neuenburg am Rhein");
 		strcpy(meinVertrag->Land, "GERMANY");
@@ -556,8 +435,7 @@ void test(versicherungstyp *vers) {
 	if (meinVertrag) {
 		strcpy(meinVertrag->Name, "Stark");
 		strcpy(meinVertrag->Vorname, "Ayia");
-		strcpy(meinVertrag->Strasse, "Hauptstraße");
-		strcpy(meinVertrag->Hausnummer, "1");
+		strcpy(meinVertrag->Strasse, "Hauptstraße 1");
 		strcpy(meinVertrag->PLZ, "12345");
 		strcpy(meinVertrag->Ort, "Königsmund");
 		strcpy(meinVertrag->Land, "SIEBEN KÖNIGSLANDE");
@@ -578,8 +456,7 @@ void test(versicherungstyp *vers) {
 	if (meinVertrag) {
 		strcpy(meinVertrag->Name, "Pond");
 		strcpy(meinVertrag->Vorname, "Amelia");
-		strcpy(meinVertrag->Strasse, "Mainstreet");
-		strcpy(meinVertrag->Hausnummer, "17");
+		strcpy(meinVertrag->Strasse, "Mainstreet 17");
 		strcpy(meinVertrag->PLZ, "12W 90N");
 		strcpy(meinVertrag->Ort, "Leadworth");
 		strcpy(meinVertrag->Land, "GREAT BRITAIN");
