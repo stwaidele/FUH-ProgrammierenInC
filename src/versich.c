@@ -80,11 +80,34 @@ typedef struct versicherungstyp {
  */
 int getNextVertragsID(versicherungstyp *);
 
+/*
+ *  Implementation von Hilfsfunktionen
+ */
+void warteAufTaste() {
+	printf("Bitte <enter> drücken um fortzufahren");
+	getc(stdin);
+}
+
+void waitAndClearScreen(void) {
+	/*
+	 * Löscht nicht wirklich den Bildschriminhalt
+	 * (siehe http://cboard.cprogramming.com/c-programming/23780-how-do-i-clear-screen-c-program.html )
+	 * Sorgt aber für ausreichend visuellen Abstand vor den neuen Ausgaben.
+	 */
+	warteAufTaste();
+	printf("\n\n\n\n\n\n");
+}
+
+/*
+ * Verwaltungsfunktionen
+ *
+ * Direkter Bezug zur Aufgabenstellung „Versicherungsverwaltung“
+ */
 
 vertragstyp *vertragstypConstructor(versicherungstyp *vers) {
 	vertragstyp *v = malloc(sizeof(*v));
 	v->VertragsID = getNextVertragsID(vers);
-	for(int i=0; i<MAX_ZAHLUNGEN; i++) {
+	for (int i = 0; i < MAX_ZAHLUNGEN; i++) {
 		v->Abrechnungen[i].Betrag = 0;
 		v->Abrechnungen[i].FaelligJahr = 0;
 		v->Abrechnungen[i].FaelligMonat = 0;
@@ -122,7 +145,7 @@ void zahlungsplan(vertragstyp *v) {
 	int z = 0;
 	while (z < v->GesamtAnzahlZahlungen) {
 		monat += delta;	//Monat um "Delta" erhöhen
-		if (monat>12) { // Überlauf…
+		if (monat > 12) { // Überlauf…
 			monat -= 12; // …Monat verringern
 			jahr++;	// …Jahr hochzählen
 		}
@@ -140,7 +163,7 @@ void zahlungsplan(vertragstyp *v) {
 	 * Korrektur des letzten Zahlbetrags ist somit
 	 * evt. nicht notwendig, aber nie schädlich.
 	 */
-	v->Abrechnungen[z-1].Betrag = restBetrag;
+	v->Abrechnungen[z - 1].Betrag = restBetrag;
 }
 
 void versicherungstypConstructor(versicherungstyp *vers) {
@@ -152,7 +175,7 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 	vers->currentVertragsID = 0;
 	vers->sizeOfVertragArray = INITIAL_SIZE_OF_VERTRAG_ARRAY;
 	vers->Vertrag = malloc(INITIAL_SIZE_OF_VERTRAG_ARRAY * sizeof(*vertrag));
-	if (vers->Vertrag==0){
+	if (vers->Vertrag == 0) {
 		printf("malloc fehlgeschlagen!\n");
 		exit(EXIT_FAILURE);
 	}
@@ -174,12 +197,13 @@ unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
 		printf("Speicher Vergrößert auf %i.\n", vers->sizeOfVertragArray);
 	}
 	vers->Vertrag[vers->i] = *v;
+	printf("Vertrag # %d an Stelle %d hinzugefügt (%s %s).\n", v->VertragsID, vers->i, v->Vorname, v->Name);
 	return vers->i++;
 }
 
 void delVertrag(versicherungstyp *vers, unsigned int vid) {
-	for (int i=0; i<vers->i; i++) {
-		if ( vers->Vertrag[i].VertragsID == vid ) {
+	for (int i = 0; i < vers->i; i++) {
+		if (vers->Vertrag[i].VertragsID == vid) {
 			vers->Vertrag[i].VertragsID = 0;
 		}
 	} // for (Versicherungen)
@@ -202,86 +226,110 @@ int getNextVertragsID(versicherungstyp *v) {
 	return nextID;
 }
 
+/*
+ * Hauptfunktionen
+ *
+ * Spiegeln die Menüoptionen wieder
+ */
 void vertragErfassen(versicherungstyp *vers) {
 	printf("\nVertrag erfassen\n");
 	printf("----------------\n");
 
 	vertragstyp *meinVertrag = vertragstypConstructor(vers);
-		if (meinVertrag) {
-			printf("Name: ");
-			scanf("%s", meinVertrag->Name);
-			printf("Vorname: ");
-			scanf("%s", meinVertrag->Vorname);
-			printf("Straße: ");
-			scanf("%s", meinVertrag->Strasse);
-			printf("Hausnummer: ");
-			scanf("%s", meinVertrag->Hausnummer );
-			printf("PLZ: ");
-			scanf("%s", meinVertrag->PLZ);
-			printf("Ort: ");
-			scanf("%s", meinVertrag->Ort);
-			printf("Land: ");
-			scanf("%s", meinVertrag->Land);
-			printf("Jahresbeitrag in ¢: ");
-			scanf("%d", &meinVertrag->Jahresbeitrag);
+	if (meinVertrag) {
+		printf("Name: ");
+		scanf("%s", meinVertrag->Name);
+		getc(stdin); // Newline „weglesen“
+		printf("Vorname: ");
+		scanf("%s", meinVertrag->Vorname);
+		getc(stdin); // Newline „weglesen“
+		printf("Straße: ");
+		scanf("%s", meinVertrag->Strasse);
+		getc(stdin); // Newline „weglesen“
+		printf("Hausnummer: ");
+		scanf("%s", meinVertrag->Hausnummer);
+		getc(stdin); // Newline „weglesen“
+		printf("PLZ: ");
+		scanf("%s", meinVertrag->PLZ);
+		getc(stdin); // Newline „weglesen“
+		printf("Ort: ");
+		scanf("%s", meinVertrag->Ort);
+		getc(stdin); // Newline „weglesen“
+		printf("Land: ");
+		scanf("%s", meinVertrag->Land);
+		getc(stdin); // Newline „weglesen“
+		printf("Jahresbeitrag in ¢: ");
+		scanf("%d", &meinVertrag->Jahresbeitrag);
+		getc(stdin); // Newline „weglesen“
 
-			bool inputOK = false;
-			int i;
-			do {
-				printf("Zahlungsmodus (1: jährlich / 2: halbjährlich / 4: vierteljährlich): ");
-				scanf("%d", &i);
-				switch(i) {
-				case 1:
-					meinVertrag->Zahlungsmodus = jaehrlich;
-					inputOK = true;
-					break;
-				case 2:
-					meinVertrag->Zahlungsmodus = halbjaehrlich;
-					inputOK = true;
-					break;
-				case 4:
-					meinVertrag->Zahlungsmodus = vierteljaehrlich;
-					inputOK = true;
-					break;
-				default:
-					printf("Falsche Eingabe! Bitte nur 1, 2 oder 4 eingeben.\n");
-					inputOK = false;
-				}
-			} while (!inputOK);
+		bool inputOK = false;
+		int i;
+		do {
+			printf(
+					"Zahlungsmodus (1: jährlich / 2: halbjährlich / 4: vierteljährlich): ");
+			scanf("%d", &i);
+			getc(stdin); // Newline „weglesen“
+			switch (i) {
+			case 1:
+				meinVertrag->Zahlungsmodus = jaehrlich;
+				inputOK = true;
+				break;
+			case 2:
+				meinVertrag->Zahlungsmodus = halbjaehrlich;
+				inputOK = true;
+				break;
+			case 4:
+				meinVertrag->Zahlungsmodus = vierteljaehrlich;
+				inputOK = true;
+				break;
+			default:
+				printf("Falsche Eingabe! Bitte nur 1, 2 oder 4 eingeben.\n");
+				inputOK = false;
+			}
+		} while (!inputOK);
 
-			do {
-				printf("Laufzeit in Jahren (1…5): ");
-				scanf("%d", &(meinVertrag->Laufzeit));
-				if ((meinVertrag->Laufzeit <= 5) && (meinVertrag->Laufzeit >= 1)) {
-					inputOK = true;
-				} else {
-					printf("Falsche Eingabe! Bitte nur 1, 2, 3, 4 oder 5 eingeben.\n");
-					inputOK=false;
-				}
-			} while(!inputOK);
+		do {
+			printf("Laufzeit in Jahren (1…5): ");
+			scanf("%d", &(meinVertrag->Laufzeit));
+			getc(stdin); // Newline „weglesen“
+			if ((meinVertrag->Laufzeit <= 5) && (meinVertrag->Laufzeit >= 1)) {
+				inputOK = true;
+			} else {
+				printf(
+						"Falsche Eingabe! Bitte nur 1, 2, 3, 4 oder 5 eingeben.\n");
+				inputOK = false;
+			}
+		} while (!inputOK);
 
-			do {
-				printf("Abschlussdatum - Monat (1…12): ");
-				scanf("%d", &(meinVertrag->AbschlussMonat));
-				if ((meinVertrag->AbschlussMonat <= 12) && (meinVertrag->AbschlussMonat >= 1)) {
-					inputOK = true;
-				} else {
-					printf("Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
-					inputOK=false;
-				}
-			} while(!inputOK);
+		do {
+			printf("Abschlussdatum - Monat (1…12): ");
+			scanf("%d", &(meinVertrag->AbschlussMonat));
+			getc(stdin); // Newline „weglesen“
+			if ((meinVertrag->AbschlussMonat <= 12)
+					&& (meinVertrag->AbschlussMonat >= 1)) {
+				inputOK = true;
+			} else {
+				printf(
+						"Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
+				inputOK = false;
+			}
+		} while (!inputOK);
 
-			printf("Abschlussdatum - Jahr: ");
-			scanf("%d", &(meinVertrag->AbschlussJahr));
-			meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
-												* meinVertrag->Zahlungsmodus;
-			zahlungsplan(meinVertrag);
-			int idx = addVertrag(vers, meinVertrag);
-			printf("%d\n", vers->Vertrag[idx].VertragsID);
-			printf("Vertrag (%s %s) mit ID %d hinzugefügt.\n", meinVertrag->Vorname, meinVertrag->Name, meinVertrag->VertragsID);
-		} else {
-			puts("Fehler beim Erzeugen des Vertrags");
-		}
+		printf("Abschlussdatum - Jahr: ");
+		getc(stdin); // Newline „weglesen“
+		scanf("%d", &(meinVertrag->AbschlussJahr));
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		int idx = addVertrag(vers, meinVertrag);
+		printf("%d\n", vers->Vertrag[idx].VertragsID);
+		printf("Vertrag (%s %s) mit ID %d hinzugefügt.\n", meinVertrag->Vorname,
+				meinVertrag->Name, meinVertrag->VertragsID);
+	} else {
+		puts("Fehler beim Erzeugen des Vertrags");
+	}
+	waitAndClearScreen();
+	return;
 }
 
 void vertragAnzeigen(versicherungstyp *vers) {
@@ -293,6 +341,7 @@ void vertragAnzeigen(versicherungstyp *vers) {
 
 	printf("Bitte geben Sie die Vertragsnummer ein (1…%d): ", vers->i);
 	scanf("%i", &vnum);
+	getc(stdin); // Newline „weglesen“
 
 	for (int c = 0; c < vers->i; c++) {
 		if (vers->Vertrag[c].VertragsID == vnum) {
@@ -304,12 +353,13 @@ void vertragAnzeigen(versicherungstyp *vers) {
 					vers->Vertrag[c].AbschlussMonat,
 					vers->Vertrag[c].AbschlussJahr,
 					vers->Vertrag[c].GesamtAnzahlZahlungen);
-			for(int i=0; i<MAX_ZAHLUNGEN; i++) {
-				if(vers->Vertrag[c].Abrechnungen[i].Betrag>0) {
-					printf("%2d/%4d: %d ¢ ", vers->Vertrag[c].Abrechnungen[i].FaelligMonat,
-											 vers->Vertrag[c].Abrechnungen[i].FaelligJahr,
-											 vers->Vertrag[c].Abrechnungen[i].Betrag);
-					if (vers->Vertrag[c].Abrechnungen[i].Status == bezahlt ) {
+			for (int i = 0; i < MAX_ZAHLUNGEN; i++) {
+				if (vers->Vertrag[c].Abrechnungen[i].Betrag > 0) {
+					printf("%2d/%4d: %d ¢ ",
+							vers->Vertrag[c].Abrechnungen[i].FaelligMonat,
+							vers->Vertrag[c].Abrechnungen[i].FaelligJahr,
+							vers->Vertrag[c].Abrechnungen[i].Betrag);
+					if (vers->Vertrag[c].Abrechnungen[i].Status == bezahlt) {
 						printf("(bezahlt), ");
 					} else {
 						printf("(offen  ), ");
@@ -323,6 +373,8 @@ void vertragAnzeigen(versicherungstyp *vers) {
 	if (!ausgegeben) {
 		printf("Kein Vertrag mit Nummer %d gefunden.\n", vnum);
 	}
+	waitAndClearScreen();
+	return;
 }
 
 void kundenlisteAnzeigen(versicherungstyp *vers) {
@@ -334,66 +386,65 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 
 	char *temp;
 	char *kunden[vers->i][size];
-	temp = malloc(size+1);
+	temp = malloc(size + 1);
 	/*
 	 * Kundenliste erzeugen
 	 */
-	printf("Name                      | Vorname                   | Vertrag #  | Straße                    | Haus  | PLZ        | Ort                       | Land                      | Abschluss | Jahresbeitrag\n");
-	printf("--------------------------+---------------------------+------------+---------------------------+-------+------------+---------------------------+---------------------------+-----------+------------------\n");
-	for(int i=0; i<vers->i; i++) {
+	printf(
+			"Name                      | Vorname                   | Vertrag #  | Straße                    | Haus  | PLZ        | Ort                       | Land                      | Abschluss | Jahresbeitrag\n");
+	printf(
+			"--------------------------+---------------------------+------------+---------------------------+-------+------------+---------------------------+---------------------------+-----------+------------------\n");
+	for (int i = 0; i < vers->i; i++) {
 		if (vers->Vertrag[i].VertragsID) {
-		empty = false;
-		snprintf(temp, size,"%-25s | %-25s | %10d | %-25s | %5s | %-10s | %-25s | %-25s |  %02d.%04d | %15d ¢", vers->Vertrag[i].Name,
-												  vers->Vertrag[i].Vorname,
-												  vers->Vertrag[i].VertragsID,
-												  vers->Vertrag[i].Strasse,
-												  vers->Vertrag[i].Hausnummer,
-												  vers->Vertrag[i].PLZ,
-												  vers->Vertrag[i].Ort,
-												  vers->Vertrag[i].Land,
-												  vers->Vertrag[i].AbschlussMonat,
-												  vers->Vertrag[i].AbschlussJahr,
-												  vers->Vertrag[i].Jahresbeitrag
-				);
-		strcpy(kunden[i], temp);
+			empty = false;
+			snprintf(temp, size,
+					"%-25s | %-25s | %10d | %-25s | %5s | %-10s | %-25s | %-25s |  %02d.%04d | %15d ¢",
+					vers->Vertrag[i].Name, vers->Vertrag[i].Vorname,
+					vers->Vertrag[i].VertragsID, vers->Vertrag[i].Strasse,
+					vers->Vertrag[i].Hausnummer, vers->Vertrag[i].PLZ,
+					vers->Vertrag[i].Ort, vers->Vertrag[i].Land,
+					vers->Vertrag[i].AbschlussMonat,
+					vers->Vertrag[i].AbschlussJahr,
+					vers->Vertrag[i].Jahresbeitrag);
+			strcpy(kunden[i], temp);
 		} else {
 			strcpy(kunden[i], "");
 		} // if(VertragsID)
 	} // for(Verträge)
 
-	if(empty){
+	if (empty) {
 		printf("Keine Aktiven Verträge\n");
 	} else {
-	/*
-	 * Kundenliste sortieren
-	 * Bubblesort mit Dreieckstausch,
-	 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
-	 */
-	   for (int i = 0; i < vers->i; i++) {
-	      for (int j = 0; j < vers->i - 1; j++) {
-	         if (strcmp(kunden[j], kunden[j + 1]) > 0) {
-	            strcpy(temp, kunden[j]);
-	            strcpy(kunden[j], kunden[j + 1]);
-	            strcpy(kunden[j + 1], temp);
-	         }
-	      }
-	   }
+		/*
+		 * Kundenliste sortieren
+		 * Bubblesort mit Dreieckstausch,
+		 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
+		 */
+		for (int i = 0; i < vers->i; i++) {
+			for (int j = 0; j < vers->i - 1; j++) {
+				if (strcmp(kunden[j], kunden[j + 1]) > 0) {
+					strcpy(temp, kunden[j]);
+					strcpy(kunden[j], kunden[j + 1]);
+					strcpy(kunden[j + 1], temp);
+				}
+			}
+		}
 
-	/*
-	 * Kundenliste ausgeben
-	 */
-	int j = 0;
-	getc(stdin); // Newline „weglesen“
-	for(int i=0; i<vers->i; i++) {
-		printf("%s\n", kunden[i]);
-		j++;
-		if ( j % 15 == 0 ) {
-			printf("Bitte <enter> drücken um fortzufahren");
-			getc(stdin);
+		/*
+		 * Kundenliste ausgeben
+		 */
+		int j = 0;
+		for (int i = 0; i < vers->i; i++) {
+			printf("%s\n", kunden[i]);
+			j++;
+			if (j % 15 == 0) {
+				warteAufTaste();
+			}
 		}
 	}
-	}
 	free(temp);
+	waitAndClearScreen();
+	return;
 }
 
 void beitragslisteAnzeigen(versicherungstyp *vers) {
@@ -404,8 +455,8 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 	bool empty = true;
 
 	char *temp;
-	char *beitraege[(vers->i)*20][size]; // Maximal 20 Beiträge pro Versicherung können fällig sein. (Ende der Vertragslaufzeit, keine geleisteten Zahlungen)
-	temp = malloc(size+1);
+	char *beitraege[(vers->i) * 20][size]; // Maximal 20 Beiträge pro Versicherung können fällig sein. (Ende der Vertragslaufzeit, keine geleisteten Zahlungen)
+	temp = malloc(size + 1);
 
 	/*
 	 * Monat und Jahr zur Fälligkeitsbestimmung einlesen
@@ -417,77 +468,79 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 	do {
 		printf("Bewertung zum Datum - Monat (1…12): ");
 		scanf("%d", &monat);
+		getc(stdin); // Newline „weglesen“
 		if ((monat <= 12) && (monat >= 1)) {
 			inputOK = true;
 		} else {
-			printf("Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
-			inputOK=false;
+			printf(
+					"Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
+			inputOK = false;
 		}
-	} while(!inputOK);
+	} while (!inputOK);
 
 	printf("Bewertung zum Datum - Jahr: ");
 	scanf("%d", &jahr);
+	getc(stdin); // Newline „weglesen“
 
-	printf("Vertrag #  | Name                      | Vorname                   | Betrag in ¢\n");
-	printf("-----------+---------------------------+---------------------------+--------------\n");
+	printf(
+			"Vertrag #  | Name                      | Vorname                   | Betrag in ¢\n");
+	printf(
+			"-----------+---------------------------+---------------------------+--------------\n");
 	/*
 	 * Beitragsliste erzeugen
 	 */
-	for(int i=0; i<vers->i; i++) {
-		for(int j=0; j<20; j++) {
-			if( (vers->Vertrag[i].Abrechnungen[j].Betrag > 0)
-				&& (vers->Vertrag[i].Abrechnungen[j].FaelligJahr == jahr )
-				&& (vers->Vertrag[i].Abrechnungen[j].FaelligMonat == monat )
-				&& (vers->Vertrag[i].Abrechnungen[j].Status != bezahlt )
-			  ) {
+	for (int i = 0; i < vers->i; i++) {
+		for (int j = 0; j < 20; j++) {
+			if ((vers->Vertrag[i].Abrechnungen[j].Betrag > 0)
+					&& (vers->Vertrag[i].Abrechnungen[j].FaelligJahr == jahr)
+					&& (vers->Vertrag[i].Abrechnungen[j].FaelligMonat == monat)
+					&& (vers->Vertrag[i].Abrechnungen[j].Status != bezahlt)) {
 				empty = false;
-				snprintf(temp, size,"%10d | %-25s | %-25s | %10d ¢",
-												  vers->Vertrag[i].VertragsID,
-												  vers->Vertrag[i].Name,
-												  vers->Vertrag[i].Vorname,
-												  vers->Vertrag[i].Abrechnungen[j].Betrag
-						);
+				snprintf(temp, size, "%10d | %-25s | %-25s | %10d ¢",
+						vers->Vertrag[i].VertragsID, vers->Vertrag[i].Name,
+						vers->Vertrag[i].Vorname,
+						vers->Vertrag[i].Abrechnungen[j].Betrag);
 				strcpy(beitraege[i], temp);
 			}
 		}
 	}
-	if(empty){
+	if (empty) {
 		printf("Keine fälligen Beiträge für diesen Zeitraum\n");
 	} else {
-	/*
-	 * Beitragsliste sortieren
-	 * Bubblesort mit Dreieckstausch,
-	 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
-	 */
+		/*
+		 * Beitragsliste sortieren
+		 * Bubblesort mit Dreieckstausch,
+		 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
+		 */
 
-	   for (int i = 0; i < vers->i; i++) {
-	      for (int j = 0; j < vers->i - 1; j++) {
-	         if (strcmp(beitraege[j], beitraege[j + 1]) > 0) {
-	            strcpy(temp, beitraege[j]);
-	            strcpy(beitraege[j], beitraege[j + 1]);
-	            strcpy(beitraege[j + 1], temp);
-	         }
-	      }
-	   }
-
-	/*
-	 * Beitragsliste ausgeben
-	 */
-		int j = 0;
-		getc(stdin); // Newline „weglesen“
-
-	for(int i=0; i<vers->i; i++) {
-		if (strlen(beitraege[i])>0) {
-			printf("%s\n", beitraege[i]);
-			j++;
-			if ( j % 15 == 0 ) {
-				printf("Bitte <enter> drücken um fortzufahren");
-				getc(stdin);
+		for (int i = 0; i < vers->i; i++) {
+			for (int j = 0; j < vers->i - 1; j++) {
+				if (strcmp(beitraege[j], beitraege[j + 1]) > 0) {
+					strcpy(temp, beitraege[j]);
+					strcpy(beitraege[j], beitraege[j + 1]);
+					strcpy(beitraege[j + 1], temp);
+				}
 			}
 		}
-	}
-} // if (empty) else
+
+		/*
+		 * Beitragsliste ausgeben
+		 */
+		int j = 0;
+
+		for (int i = 0; i < vers->i; i++) {
+			if (strlen(beitraege[i]) > 0) {
+				printf("%s\n", beitraege[i]);
+				j++;
+				if (j % 15 == 0) {
+					warteAufTaste();
+				}
+			}
+		}
+	} // if (empty) else
 	free(temp);
+	waitAndClearScreen();
+	return;
 }
 
 void zahlungErfassen(versicherungstyp *vers) {
@@ -501,6 +554,7 @@ void zahlungErfassen(versicherungstyp *vers) {
 
 	printf("Bitte geben Sie die Vertragsnummer ein (1…%d): ", vers->i);
 	scanf("%i", &vnum);
+	getc(stdin); // Newline „weglesen“
 
 	for (int i = 0; i < vers->i; i++) {
 		if (vers->Vertrag[i].VertragsID == vnum) {
@@ -514,6 +568,7 @@ void zahlungErfassen(versicherungstyp *vers) {
 			do {
 				printf("Zahlung zum Datum - Monat (1…12): ");
 				scanf("%d", &monat);
+				getc(stdin); // Newline „weglesen“
 				if ((monat <= 12) && (monat >= 1)) {
 					inputOK = true;
 				} else {
@@ -525,6 +580,7 @@ void zahlungErfassen(versicherungstyp *vers) {
 
 			printf("Zahlung zum Datum - Jahr: ");
 			scanf("%d", &jahr);
+			getc(stdin); // Newline „weglesen“
 
 			for (int j = 0; j < 20; j++) {
 				if ((vers->Vertrag[i].Abrechnungen[j].Betrag > 0)
@@ -547,9 +603,9 @@ void zahlungErfassen(versicherungstyp *vers) {
 				}
 			}
 			if (!abrechnungGefunden) {
-						printf(
-								"Keine vorgesehene Zahlung für Vertrag %d in %2d.%4d.\nKEINE BUCHUNG DURCHGEFÜHRT.\n",
-								vnum, monat, jahr);
+				printf(
+						"Keine vorgesehene Zahlung für Vertrag %d in %2d.%4d.\nKEINE BUCHUNG DURCHGEFÜHRT.\n",
+						vnum, monat, jahr);
 			}
 		}
 
@@ -557,6 +613,8 @@ void zahlungErfassen(versicherungstyp *vers) {
 	if (!vertragGefunden) {
 		printf("Kein Vertrag mit Nummer %d gefunden.\n", vnum);
 	}
+	waitAndClearScreen();
+	return;
 }
 
 void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
@@ -573,32 +631,33 @@ void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
 	do {
 		printf("Ablaufdatum - Monat (1…12): ");
 		scanf("%d", &monat);
+		getc(stdin); // Newline „weglesen“
 		if ((monat <= 12) && (monat >= 1)) {
 			inputOK = true;
 		} else {
-			printf("Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
-			inputOK=false;
+			printf(
+					"Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
+			inputOK = false;
 		}
-	} while(!inputOK);
+	} while (!inputOK);
 
 	printf("Ablaufdatum - Jahr: ");
 	scanf("%d", &jahr);
+	getc(stdin); // Newline „weglesen“
 
 	int anzAbgelaufen = 0;
 
 	for (int i = 0; i < vers->i; i++) {
-		if (    ( (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) < jahr ) // Ablauf aus Jahreszahl erkennbar
-			    || (
-			         (    (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) == jahr ) // Oder muss der Monat betrachtet werden
-			 	       && ( vers->Vertrag[i].AbschlussMonat < monat )
-				   )
-		) {
+		if (((vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) < jahr) // Ablauf aus Jahreszahl erkennbar
+				|| (((vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit)
+						== jahr) // Oder muss der Monat betrachtet werden
+				&& (vers->Vertrag[i].AbschlussMonat < monat))) {
 			/*
 			 * Der Vertrag ist abgelaufen, wurde er auch komplett bezahlt?
 			 */
 			bool komplettBezahlt = true;
-			for (int j=0; j<20; j++) {
-				if  ( vers->Vertrag[i].Abrechnungen[j].Status == offen ) {
+			for (int j = 0; j < 20; j++) {
+				if (vers->Vertrag[i].Abrechnungen[j].Status == offen) {
 					komplettBezahlt = false;
 				} // if (!bezahlt)
 			} // for (Abrechnungen)
@@ -606,34 +665,32 @@ void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
 			 * Abgelaufen und bezahlt -> Vertrag löschen
 			 */
 			if (komplettBezahlt) {
-				printf("Vertrag %d abgelaufen und komplett bezahlt wird gelöscht.\n", vers->Vertrag[i].VertragsID);
-				delVertrag(vers, vers->Vertrag[i].VertragsID );
+				printf(
+						"Vertrag %d abgelaufen und komplett bezahlt wird gelöscht.\n",
+						vers->Vertrag[i].VertragsID);
+				delVertrag(vers, vers->Vertrag[i].VertragsID);
 				anzAbgelaufen++;
 			} else {
-				printf("Vertrag %d abgelaufen aber nicht komplett bezahlt. NICHT GELÖSCHT.\n", vers->Vertrag[i].VertragsID);
+				printf(
+						"Vertrag %d abgelaufen aber nicht komplett bezahlt. NICHT GELÖSCHT.\n",
+						vers->Vertrag[i].VertragsID);
 			} // if(komplettBezahlt)
 		} // if (Abgelaufen)
 	} // for (Verträge)
-	if (anzAbgelaufen==0) {
+	if (anzAbgelaufen == 0) {
 		printf("Keine abgelaufenen Verträge zum angegebenen Datum gefunden.\n");
 	}
-}
-
-/*
- *  Implementation von Hilfsfunktionen
- */
-
-void clearScreen(void) {
-	/*
-	 * Löscht nicht wirklich den Bildschriminhalt
-	 * (siehe http://cboard.cprogramming.com/c-programming/23780-how-do-i-clear-screen-c-program.html )
-	 * Sorgt aber für ausreichend visuellen Abstand vor den neuen Ausgaben.
-	 *
-	 */
-	printf("\n\n\n\n\n\n");
+	waitAndClearScreen();
+	return;
 }
 
 void test(versicherungstyp *vers) {
+	/*
+	 * Erzeugen von Verträgen zu Testzwecken
+	 *
+	 * Kann im Hauptmenü über die nicht angezeigte Option „t“ aufgerufen werden.
+	 */
+
 	vertragstyp *meinVertrag = vertragstypConstructor(vers);
 	if (meinVertrag) {
 		strcpy(meinVertrag->Name, "Waidele");
@@ -651,11 +708,8 @@ void test(versicherungstyp *vers) {
 		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
 				* meinVertrag->Zahlungsmodus;
 		zahlungsplan(meinVertrag);
-		int idx = addVertrag(vers, meinVertrag);
-		printf("%d\n", vers->Vertrag[idx].VertragsID);
+		addVertrag(vers, meinVertrag);
 	}
-	puts("Vertrag (Stefan Waidele) hinzugefügt.");
-
 	meinVertrag = vertragstypConstructor(vers);
 	if (meinVertrag) {
 		strcpy(meinVertrag->Name, "Stark");
@@ -673,11 +727,8 @@ void test(versicherungstyp *vers) {
 		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
 				* meinVertrag->Zahlungsmodus;
 		zahlungsplan(meinVertrag);
-		int idx = addVertrag(vers, meinVertrag);
-		printf("%d\n", vers->Vertrag[idx].VertragsID);
+		addVertrag(vers, meinVertrag);
 	}
-	puts("Vertrag (Arya Stark) hinzugefügt.");
-
 	meinVertrag = vertragstypConstructor(vers);
 	if (meinVertrag) {
 		strcpy(meinVertrag->Name, "Pond");
@@ -695,15 +746,368 @@ void test(versicherungstyp *vers) {
 		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
 				* meinVertrag->Zahlungsmodus;
 		zahlungsplan(meinVertrag);
-		int idx = addVertrag(vers, meinVertrag);
-		printf("%d\n", vers->Vertrag[idx].VertragsID);
+		addVertrag(vers, meinVertrag);
 	}
-	puts("Vertrag (Amelia Pond) hinzugefügt.");
-
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Meier");
+		strcpy(meinVertrag->Vorname, "Rudolf");
+		strcpy(meinVertrag->Strasse, "Astraße");
+		strcpy(meinVertrag->Hausnummer, "1");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 234217;
+		meinVertrag->Zahlungsmodus = jaehrlich;
+		meinVertrag->Laufzeit = 1;
+		meinVertrag->AbschlussMonat = juni;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Meyer");
+		strcpy(meinVertrag->Vorname, "Quasimodo");
+		strcpy(meinVertrag->Strasse, "Bstraße");
+		strcpy(meinVertrag->Hausnummer, "2");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 471100;
+		meinVertrag->Zahlungsmodus = halbjaehrlich;
+		meinVertrag->Laufzeit = 1;
+		meinVertrag->AbschlussMonat = mai;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Mayer");
+		strcpy(meinVertrag->Vorname, "Petra");
+		strcpy(meinVertrag->Strasse, "Dstraße");
+		strcpy(meinVertrag->Hausnummer, "3");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 12345;
+		meinVertrag->Zahlungsmodus = vierteljaehrlich;
+		meinVertrag->Laufzeit = 1;
+		meinVertrag->AbschlussMonat = april;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Müller");
+		strcpy(meinVertrag->Vorname, "Oskar");
+		strcpy(meinVertrag->Strasse, "Einestraße");
+		strcpy(meinVertrag->Hausnummer, "4");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 234217;
+		meinVertrag->Zahlungsmodus = jaehrlich;
+		meinVertrag->Laufzeit = 2;
+		meinVertrag->AbschlussMonat = maerz;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Schultze");
+		strcpy(meinVertrag->Vorname, "Norbert");
+		strcpy(meinVertrag->Strasse, "Parkstraße");
+		strcpy(meinVertrag->Hausnummer, "5");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 471100;
+		meinVertrag->Zahlungsmodus = halbjaehrlich;
+		meinVertrag->Laufzeit = 2;
+		meinVertrag->AbschlussMonat = februar;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Schulze");
+		strcpy(meinVertrag->Vorname, "Maria");
+		strcpy(meinVertrag->Strasse, "Schlossallee");
+		strcpy(meinVertrag->Hausnummer, "6");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 12345;
+		meinVertrag->Zahlungsmodus = vierteljaehrlich;
+		meinVertrag->Laufzeit = 2;
+		meinVertrag->AbschlussMonat = januar;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Meier");
+		strcpy(meinVertrag->Vorname, "Luise");
+		strcpy(meinVertrag->Strasse, "Poststraße");
+		strcpy(meinVertrag->Hausnummer, "7");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 234217;
+		meinVertrag->Zahlungsmodus = jaehrlich;
+		meinVertrag->Laufzeit = 3;
+		meinVertrag->AbschlussMonat = dezember;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Meyer");
+		strcpy(meinVertrag->Vorname, "Klaus");
+		strcpy(meinVertrag->Strasse, "Dudenstraße");
+		strcpy(meinVertrag->Hausnummer, "8");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 471100;
+		meinVertrag->Zahlungsmodus = halbjaehrlich;
+		meinVertrag->Laufzeit = 3;
+		meinVertrag->AbschlussMonat = november;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Maier");
+		strcpy(meinVertrag->Vorname, "Jürgen");
+		strcpy(meinVertrag->Strasse, "Teslastraße");
+		strcpy(meinVertrag->Hausnummer, "9");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 12345;
+		meinVertrag->Zahlungsmodus = vierteljaehrlich;
+		meinVertrag->Laufzeit = 3;
+		meinVertrag->AbschlussMonat = oktober;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Mayer");
+		strcpy(meinVertrag->Vorname, "Ingrid");
+		strcpy(meinVertrag->Strasse, "Adastraße");
+		strcpy(meinVertrag->Hausnummer, "10");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 234217;
+		meinVertrag->Zahlungsmodus = jaehrlich;
+		meinVertrag->Laufzeit = 4;
+		meinVertrag->AbschlussMonat = september;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Müller");
+		strcpy(meinVertrag->Vorname, "Heidi");
+		strcpy(meinVertrag->Strasse, "Pascalstraße");
+		strcpy(meinVertrag->Hausnummer, "11");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 471100;
+		meinVertrag->Zahlungsmodus = halbjaehrlich;
+		meinVertrag->Laufzeit = 4;
+		meinVertrag->AbschlussMonat = august;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Schultze");
+		strcpy(meinVertrag->Vorname, "Gerald");
+		strcpy(meinVertrag->Strasse, "Neumannstraße");
+		strcpy(meinVertrag->Hausnummer, "12");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 12345;
+		meinVertrag->Zahlungsmodus = vierteljaehrlich;
+		meinVertrag->Laufzeit = 4;
+		meinVertrag->AbschlussMonat = juli;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Schulze");
+		strcpy(meinVertrag->Vorname, "Fiona");
+		strcpy(meinVertrag->Strasse, "Turingstraße");
+		strcpy(meinVertrag->Hausnummer, "13");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 234217;
+		meinVertrag->Zahlungsmodus = jaehrlich;
+		meinVertrag->Laufzeit = 2;
+		meinVertrag->AbschlussMonat = juni;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Bauer");
+		strcpy(meinVertrag->Vorname, "Egon");
+		strcpy(meinVertrag->Strasse, "Boolstraße");
+		strcpy(meinVertrag->Hausnummer, "14");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 471100;
+		meinVertrag->Zahlungsmodus = halbjaehrlich;
+		meinVertrag->Laufzeit = 3;
+		meinVertrag->AbschlussMonat = mai;
+		meinVertrag->AbschlussJahr = 2016;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Baur");
+		strcpy(meinVertrag->Vorname, "Doris");
+		strcpy(meinVertrag->Strasse, "Javaboulevard");
+		strcpy(meinVertrag->Hausnummer, "15");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 12345;
+		meinVertrag->Zahlungsmodus = vierteljaehrlich;
+		meinVertrag->Laufzeit = 4;
+		meinVertrag->AbschlussMonat = april;
+		meinVertrag->AbschlussJahr = 2017;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Bauer");
+		strcpy(meinVertrag->Vorname, "Celine");
+		strcpy(meinVertrag->Strasse, "Perlstraße");
+		strcpy(meinVertrag->Hausnummer, "16");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 234217;
+		meinVertrag->Zahlungsmodus = jaehrlich;
+		meinVertrag->Laufzeit = 5;
+		meinVertrag->AbschlussMonat = maerz;
+		meinVertrag->AbschlussJahr = 2010;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Baur");
+		strcpy(meinVertrag->Vorname, "Bruno");
+		strcpy(meinVertrag->Strasse, "Quarkstraße");
+		strcpy(meinVertrag->Hausnummer, "17");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 471100;
+		meinVertrag->Zahlungsmodus = halbjaehrlich;
+		meinVertrag->Laufzeit = 5;
+		meinVertrag->AbschlussMonat = februar;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	meinVertrag = vertragstypConstructor(vers);
+	if (meinVertrag) {
+		strcpy(meinVertrag->Name, "Hoffmann");
+		strcpy(meinVertrag->Vorname, "Axel");
+		strcpy(meinVertrag->Strasse, "Bahnhofstraße");
+		strcpy(meinVertrag->Hausnummer, "18");
+		strcpy(meinVertrag->PLZ, "12345");
+		strcpy(meinVertrag->Ort, "Berlin");
+		strcpy(meinVertrag->Land, "GERMANY");
+		meinVertrag->Jahresbeitrag = 12345;
+		meinVertrag->Zahlungsmodus = vierteljaehrlich;
+		meinVertrag->Laufzeit = 5;
+		meinVertrag->AbschlussMonat = januar;
+		meinVertrag->AbschlussJahr = 2015;
+		meinVertrag->GesamtAnzahlZahlungen = meinVertrag->Laufzeit
+				* meinVertrag->Zahlungsmodus;
+		zahlungsplan(meinVertrag);
+		addVertrag(vers, meinVertrag);
+	}
+	waitAndClearScreen();
 }
 
+int alleDatenSpeichern(versicherungstyp *vers) {
+	bool allesIstGut = false;
+
+	if(allesIstGut) {
+		return(EXIT_SUCCESS);
+	} else {
+		return(EXIT_FAILURE);
+	}
+}
+
+
 /*
- * Implementation "main" - Menü
+ * main()
+ *
+ * Implementation des Hauptmenüs
  */
 
 int main(void) {
@@ -713,8 +1117,6 @@ int main(void) {
 	int exit = 0;
 	char input;
 	do {
-		clearScreen();
-
 		printf("Versicherungsmanagement 00810\n");
 		printf("=============================\n");
 		printf("Hauptmenü\n");
@@ -731,6 +1133,7 @@ int main(void) {
 		printf("Bitte wählen Sie (1…7): ");
 
 		scanf(" %c", &input);
+		getc(stdin); // Newline „weglesen“
 		switch (input) {
 		case '1':
 			vertragErfassen(&Versicherung);
@@ -761,8 +1164,6 @@ int main(void) {
 		}
 	} while (exit == 0);
 
-	// Todo: Versicherungsobjekt in Datei speichern
-
-	return EXIT_SUCCESS;
+	return alleDatenSpeichern(&Versicherung);
 }
 
