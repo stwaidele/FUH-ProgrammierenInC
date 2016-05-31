@@ -330,8 +330,8 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	printf("--------------------\n");
 
 	int size = 210;
-
 	bool empty = true;
+
 	char *temp;
 	char *kunden[vers->i][size];
 	temp = malloc(size+1);
@@ -363,7 +363,7 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 
 	if(empty){
 		printf("Keine Aktiven Verträge\n");
-	}
+	} else {
 	/*
 	 * Kundenliste sortieren
 	 * Bubblesort mit Dreieckstausch,
@@ -382,8 +382,16 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	/*
 	 * Kundenliste ausgeben
 	 */
+	int j = 0;
+	getc(stdin); // Newline „weglesen“
 	for(int i=0; i<vers->i; i++) {
 		printf("%s\n", kunden[i]);
+		j++;
+		if ( j % 15 == 0 ) {
+			printf("Bitte <enter> drücken um fortzufahren");
+			getc(stdin);
+		}
+	}
 	}
 	free(temp);
 }
@@ -392,8 +400,8 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 	printf("\nBeitragsliste anzeigen\n");
 	printf("----------------------\n");
 
-	vertragstyp *vertrag; // Benötigt für sizeof()
-	int size = sizeof(*vertrag); // Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
+	int size = 85;
+	bool empty = true;
 
 	char *temp;
 	char *beitraege[(vers->i)*20][size]; // Maximal 20 Beiträge pro Versicherung können fällig sein. (Ende der Vertragslaufzeit, keine geleisteten Zahlungen)
@@ -420,6 +428,8 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 	printf("Bewertung zum Datum - Jahr: ");
 	scanf("%d", &jahr);
 
+	printf("Vertrag #  | Name                      | Vorname                   | Betrag in ¢\n");
+	printf("-----------+---------------------------+---------------------------+--------------\n");
 	/*
 	 * Beitragsliste erzeugen
 	 */
@@ -430,7 +440,8 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 				&& (vers->Vertrag[i].Abrechnungen[j].FaelligMonat == monat )
 				&& (vers->Vertrag[i].Abrechnungen[j].Status != bezahlt )
 			  ) {
-				snprintf(temp, size,"Vertrag #%d, %s, %s, %d¢.",
+				empty = false;
+				snprintf(temp, size,"%10d | %-25s | %-25s | %10d ¢",
 												  vers->Vertrag[i].VertragsID,
 												  vers->Vertrag[i].Name,
 												  vers->Vertrag[i].Vorname,
@@ -440,6 +451,9 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 			}
 		}
 	}
+	if(empty){
+		printf("Keine fälligen Beiträge für diesen Zeitraum\n");
+	} else {
 	/*
 	 * Beitragsliste sortieren
 	 * Bubblesort mit Dreieckstausch,
@@ -459,11 +473,20 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 	/*
 	 * Beitragsliste ausgeben
 	 */
+		int j = 0;
+		getc(stdin); // Newline „weglesen“
+
 	for(int i=0; i<vers->i; i++) {
 		if (strlen(beitraege[i])>0) {
 			printf("%s\n", beitraege[i]);
+			j++;
+			if ( j % 15 == 0 ) {
+				printf("Bitte <enter> drücken um fortzufahren");
+				getc(stdin);
+			}
 		}
 	}
+} // if (empty) else
 	free(temp);
 }
 
