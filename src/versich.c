@@ -3,7 +3,7 @@
  Programm    : Verwaltung und Abrechnung von Versicherungsverträgen
  File        : versich.c
  Projekt     : Einsendearbeit zum Kurs Programmieren in C, SoSe 2016
- Author      : Waidele, Stefan, ToDo: Matrikelnummer
+ Author      : Waidele, Stefan, #3794890
  Version     :
  Copyright   : (c) Stefan Waidele
  ============================================================================
