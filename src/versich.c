@@ -329,7 +329,7 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	printf("--------------------\n");
 
 	vertragstyp *vertrag; // Benötigt für sizeof()
-	int size = sizeof(*vertrag); // Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
+	int size = sizeof(*vertrag); // ToDo: Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
 
 	char *temp;
 	char *kunden[vers->i][size];
@@ -338,6 +338,7 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	 * Kundenliste erzeugen
 	 */
 	for(int i=0; i<vers->i; i++) {
+		if (vers->Vertrag[i].VertragsID) {
 		snprintf(temp, size,"%s, %s, Vertrag #%d, %s %s, %s %s %s, seit %02d.%04d, %d¢pro Jahr.", vers->Vertrag[i].Name,
 												  vers->Vertrag[i].Vorname,
 												  vers->Vertrag[i].VertragsID,
@@ -351,13 +352,15 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 												  vers->Vertrag[i].Jahresbeitrag
 				);
 		strcpy(kunden[i], temp);
-	}
+		} else {
+			strcpy(kunden[i], "");
+		} // if(VertragsID)
+	} // for(Verträge)
 	/*
 	 * Kundenliste sortieren
 	 * Bubblesort mit Dreieckstausch,
 	 * z.B. http://www.c4learn.com/c-programs/c-program-for-sorting-the-list-of-strings.html
 	 */
-
 	   for (int i = 0; i < vers->i; i++) {
 	      for (int j = 0; j < vers->i - 1; j++) {
 	         if (strcmp(kunden[j], kunden[j + 1]) > 0) {
@@ -375,7 +378,6 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 		printf("%s\n", kunden[i]);
 	}
 	free(temp);
-	// free(kunden);
 }
 
 void beitragslisteAnzeigen(versicherungstyp *vers) {
@@ -554,9 +556,9 @@ void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
 	int anzAbgelaufen = 0;
 
 	for (int i = 0; i < vers->i; i++) {
-		if (    ( (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) > jahr ) // Ablauf aus Jahreszahl erkennbar
+		if (    ( (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) < jahr ) // Ablauf aus Jahreszahl erkennbar
 			    || (
-			         (    (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) == jahr )
+			         (    (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) == jahr ) // Oder muss der Monat betrachtet werden
 			 	       && ( vers->Vertrag[i].AbschlussMonat < monat )
 				   )
 		) {
@@ -572,8 +574,13 @@ void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
 			/*
 			 * Abgelaufen und bezahlt -> Vertrag löschen
 			 */
-			delVertrag(vers, vers->Vertrag[i].VertragsID );
-			anzAbgelaufen++;
+			if (komplettBezahlt) {
+				printf("Vertrag %d abgelaufen und komplett bezahlt wird gelöscht.\n", vers->Vertrag[i].VertragsID);
+				delVertrag(vers, vers->Vertrag[i].VertragsID );
+				anzAbgelaufen++;
+			} else {
+				printf("Vertrag %d abgelaufen aber nicht komplett bezahlt. NICHT GELÖSCHT.\n", vers->Vertrag[i].VertragsID);
+			} // if(komplettBezahlt)
 		} // if (Abgelaufen)
 	} // for (Verträge)
 	if (anzAbgelaufen==0) {
