@@ -19,7 +19,7 @@
 #define MAX_ZAHLUNGEN 20
 
 enum zahlstatus {
-	offen, faellig, bezahlt
+	offen, bezahlt
 };
 enum zahlungsmodus {
 	jaehrlich = 1, halbjaehrlich = 2, vierteljaehrlich = 4
@@ -50,8 +50,7 @@ typedef struct abrechnungstyp {
 	enum zahlstatus Status;
 } abrechnungstyp;
 
-
-typedef struct {
+typedef struct vertragstyp {
 	unsigned int VertragsID;
 	char Name[25];
 	char Vorname[25];
@@ -69,7 +68,7 @@ typedef struct {
 	abrechnungstyp Abrechnungen[MAX_ZAHLUNGEN]; // 5 Jahre * 4 Zahlungen pro Jahr => max. 20 Abrechnungen
 } vertragstyp;
 
-typedef struct {
+typedef struct versicherungstyp {
 	unsigned int currentVertragsID;
 	unsigned int sizeOfVertragArray;
 	unsigned int i;				// Poition des nächsten freien Feldes im Array
@@ -215,6 +214,8 @@ void vertragErfassen(versicherungstyp *vers) {
 			scanf("%s", meinVertrag->Vorname);
 			printf("Straße: ");
 			scanf("%s", meinVertrag->Strasse);
+			printf("Hausnummer: ");
+			scanf("%s", meinVertrag->Hausnummer );
 			printf("PLZ: ");
 			scanf("%s", meinVertrag->PLZ);
 			printf("Ort: ");
@@ -328,18 +329,21 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	printf("\nKundenliste anzeigen\n");
 	printf("--------------------\n");
 
-	vertragstyp *vertrag; // Benötigt für sizeof()
-	int size = sizeof(*vertrag); // ToDo: Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
+	int size = 210;
 
+	bool empty = true;
 	char *temp;
 	char *kunden[vers->i][size];
 	temp = malloc(size+1);
 	/*
 	 * Kundenliste erzeugen
 	 */
+	printf("Name                      | Vorname                   | Vertrag #  | Straße                    | Haus  | PLZ        | Ort                       | Land                      | Abschluss | Jahresbeitrag\n");
+	printf("--------------------------+---------------------------+------------+---------------------------+-------+------------+---------------------------+---------------------------+-----------+------------------\n");
 	for(int i=0; i<vers->i; i++) {
 		if (vers->Vertrag[i].VertragsID) {
-		snprintf(temp, size,"%s, %s, Vertrag #%d, %s %s, %s %s %s, seit %02d.%04d, %d¢pro Jahr.", vers->Vertrag[i].Name,
+		empty = false;
+		snprintf(temp, size,"%-25s | %-25s | %10d | %-25s | %5s | %-10s | %-25s | %-25s |  %02d.%04d | %15d ¢", vers->Vertrag[i].Name,
 												  vers->Vertrag[i].Vorname,
 												  vers->Vertrag[i].VertragsID,
 												  vers->Vertrag[i].Strasse,
@@ -356,6 +360,10 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 			strcpy(kunden[i], "");
 		} // if(VertragsID)
 	} // for(Verträge)
+
+	if(empty){
+		printf("Keine Aktiven Verträge\n");
+	}
 	/*
 	 * Kundenliste sortieren
 	 * Bubblesort mit Dreieckstausch,
