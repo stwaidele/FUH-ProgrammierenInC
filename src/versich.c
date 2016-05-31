@@ -166,7 +166,8 @@ unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
 		void* newMem = realloc(vers->Vertrag,
 				2 * vers->sizeOfVertragArray * sizeof(*v));
 		if (!newMem) {
-			// ToDo: Fehlermeldung
+			printf("Fehler bei der Reservierung von zusätzlichem Speicher\n");
+			exit(EXIT_FAILURE);
 		}
 		vers->Vertrag = newMem;
 		vers->sizeOfVertragArray = 2 * vers->sizeOfVertragArray;
