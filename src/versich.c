@@ -89,7 +89,7 @@ vertragstyp *vertragstypConstructor(versicherungstyp *vers) {
 		v->Abrechnungen[i].Betrag = 0;
 		v->Abrechnungen[i].FaelligJahr = 0;
 		v->Abrechnungen[i].FaelligMonat = 0;
-		v->Abrechnungen[i].Status = offen;
+		v->Abrechnungen[i].Status = bezahlt;
 	}
 	return v;
 }
@@ -155,6 +155,7 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 	vers->Vertrag = malloc(INITIAL_SIZE_OF_VERTRAG_ARRAY * sizeof(*vertrag));
 	if (vers->Vertrag==0){
 		printf("malloc fehlgeschlagen!\n");
+		exit(EXIT_FAILURE);
 	}
 	vers->i = 0;
 }
@@ -175,6 +176,14 @@ unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
 	}
 	vers->Vertrag[vers->i] = *v;
 	return vers->i++;
+}
+
+void delVertrag(versicherungstyp *vers, unsigned int vid) {
+	for (int i=0; i<vers->i; i++) {
+		if ( vers->Vertrag[i].VertragsID == vid ) {
+			vers->Vertrag[i].VertragsID = 0;
+		}
+	} // for (Versicherungen)
 }
 
 int getNextVertragsID(versicherungstyp *v) {
@@ -296,9 +305,14 @@ void vertragAnzeigen(versicherungstyp *vers) {
 					vers->Vertrag[c].GesamtAnzahlZahlungen);
 			for(int i=0; i<MAX_ZAHLUNGEN; i++) {
 				if(vers->Vertrag[c].Abrechnungen[i].Betrag>0) {
-					printf("%2d/%4d: %d¢, ", vers->Vertrag[c].Abrechnungen[i].FaelligMonat,
+					printf("%2d/%4d: %d ¢ ", vers->Vertrag[c].Abrechnungen[i].FaelligMonat,
 											 vers->Vertrag[c].Abrechnungen[i].FaelligJahr,
 											 vers->Vertrag[c].Abrechnungen[i].Betrag);
+					if (vers->Vertrag[c].Abrechnungen[i].Status == bezahlt ) {
+						printf("(bezahlt), ");
+					} else {
+						printf("(offen  ), ");
+					}
 				}
 			}
 			printf("\n");
@@ -514,6 +528,57 @@ void zahlungErfassen(versicherungstyp *vers) {
 
 void abgelaufeneVertraegeLoeschen(versicherungstyp *vers) {
 	printf("\nAbgelaufene Verträge löschen\n");
+	printf("----------------------------\n");
+
+	/*
+	 * Monat und Jahr zur Fälligkeitsbestimmung einlesen
+	 */
+	bool inputOK = false;
+	enum monate monat;		// 1 - 12
+	unsigned int jahr;		// ...wir haben ein Jahr-65.536-Problem...
+
+	do {
+		printf("Ablaufdatum - Monat (1…12): ");
+		scanf("%d", &monat);
+		if ((monat <= 12) && (monat >= 1)) {
+			inputOK = true;
+		} else {
+			printf("Falsche Eingabe! Bitte nur 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 oder 12 eingeben.\n");
+			inputOK=false;
+		}
+	} while(!inputOK);
+
+	printf("Ablaufdatum - Jahr: ");
+	scanf("%d", &jahr);
+
+	int anzAbgelaufen = 0;
+
+	for (int i = 0; i < vers->i; i++) {
+		if (    ( (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) > jahr ) // Ablauf aus Jahreszahl erkennbar
+			    || (
+			         (    (vers->Vertrag[i].AbschlussJahr + vers->Vertrag[i].Laufzeit) == jahr )
+			 	       && ( vers->Vertrag[i].AbschlussMonat < monat )
+				   )
+		) {
+			/*
+			 * Der Vertrag ist abgelaufen, wurde er auch komplett bezahlt?
+			 */
+			bool komplettBezahlt = true;
+			for (int j=0; j<20; j++) {
+				if  ( vers->Vertrag[i].Abrechnungen[j].Status == offen ) {
+					komplettBezahlt = false;
+				} // if (!bezahlt)
+			} // for (Abrechnungen)
+			/*
+			 * Abgelaufen und bezahlt -> Vertrag löschen
+			 */
+			delVertrag(vers, vers->Vertrag[i].VertragsID );
+			anzAbgelaufen++;
+		} // if (Abgelaufen)
+	} // for (Verträge)
+	if (anzAbgelaufen==0) {
+		printf("Keine abgelaufenen Verträge zum angegebenen Datum gefunden.\n");
+	}
 }
 
 /*
