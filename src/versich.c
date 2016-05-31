@@ -148,7 +148,7 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 	/*
 	 * Hier werden die Werte aus der Datei gelesen bzw. eine leere „Instanz“ initialisiert.
 	 */
-	vertragstyp *vertrag; // Benötigt für sizeof() ToDo: Wirklich?
+	vertragstyp *vertrag; // Benötigt für sizeof()
 
 	vers->currentVertragsID = 0;
 	vers->sizeOfVertragArray = INITIAL_SIZE_OF_VERTRAG_ARRAY;
@@ -314,7 +314,7 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	printf("\nKundenliste anzeigen\n");
 	printf("--------------------\n");
 
-	vertragstyp *vertrag; // Benötigt für sizeof() ToDo: Wirklich?
+	vertragstyp *vertrag; // Benötigt für sizeof()
 	int size = sizeof(*vertrag); // Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
 
 	char *temp;
@@ -368,7 +368,7 @@ void beitragslisteAnzeigen(versicherungstyp *vers) {
 	printf("\nBeitragsliste anzeigen\n");
 	printf("----------------------\n");
 
-	vertragstyp *vertrag; // Benötigt für sizeof() ToDo: Wirklich?
+	vertragstyp *vertrag; // Benötigt für sizeof()
 	int size = sizeof(*vertrag); // Nur eine Schätzung der Größe. Es werden nicht alle Felder ausgegeben, dafür aber Füll- und Trennzeichen
 
 	char *temp;
