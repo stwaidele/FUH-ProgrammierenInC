@@ -44,7 +44,7 @@ enum monate {
 };
 
 typedef struct abrechnungstyp {
-	unsigned int Betrag;// In Cent! http://martinfowler.com/eaaDev/quantity.html
+	unsigned int Betrag; // In Cent! http://martinfowler.com/eaaDev/quantity.html
 	unsigned char FaelligMonat;		// 1 - 12
 	unsigned int FaelligJahr;		// ...wir haben ein Jahr-65.536-Problem...
 	enum zahlstatus Status;
@@ -170,7 +170,7 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 	/*
 	 * Hier werden die Werte aus der Datei gelesen bzw. eine leere „Instanz“ initialisiert.
 	 */
-	vertragstyp *vertrag= malloc(sizeof(*vertrag));
+	vertragstyp *vertrag = malloc(sizeof(*vertrag));
 
 	vers->currentVertragsID = 0;
 	vers->sizeOfVertragArray = INITIAL_SIZE_OF_VERTRAG_ARRAY;
@@ -189,31 +189,71 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 		do {
 			fread(vertrag, sizeof(vertragstyp), 1, fp);
 			addVertrag(vers, vertrag);
-		} while(!feof(fp));
+		} while (!feof(fp));
 
 	} else {
-		printf("Datei 'vertrag.txt' nicht gefunden.\nLeere Vertragsdatenbank\n");
+		printf(
+				"Datei 'vertrag.txt' nicht gefunden.\nLeere Vertragsdatenbank\n");
 	}
 }
 
 unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
-	// ToDo: Auf existierenden Kunden prüfen
-	if (vers->i >= vers->sizeOfVertragArray) {
-		// Array vergrößern: http://stackoverflow.com/questions/4694401/how-to-replicate-vector-in-c
-		void* newMem = realloc(vers->Vertrag,
-				2 * vers->sizeOfVertragArray * sizeof(*v));
-		if (!newMem) {
-			printf("Fehler bei der Reservierung von zusätzlichem Speicher\n");
-			exit(EXIT_FAILURE);
-		}
-		vers->Vertrag = newMem;
-		vers->sizeOfVertragArray = 2 * vers->sizeOfVertragArray;
-		printf("Speicher Vergrößert auf %i.\n", vers->sizeOfVertragArray);
+	/*
+	 * Auf existierenden Kunden prüfen
+	 */
+	int size = 150;
+	bool neuerKunde = true;
+
+	char *temp;
+	temp = malloc(size + 1);
+	char *neu;
+	neu = malloc(size + 1);
+
+	snprintf(neu, size, "%-25s | %-25s | %-25s | %5s | %-10s | %-25s | %-25s",
+			v->Name, v->Vorname, v->Strasse, v->Hausnummer, v->PLZ, v->Ort,
+			v->Land);
+
+	for (int i = 0; i < vers->i; i++) {
+		if (vers->Vertrag[i].VertragsID) { // Nicht gelöscht
+			snprintf(temp, size,
+					"%-25s | %-25s | %-25s | %5s | %-10s | %-25s | %-25s",
+					vers->Vertrag[i].Name, vers->Vertrag[i].Vorname,
+					vers->Vertrag[i].Strasse, vers->Vertrag[i].Hausnummer,
+					vers->Vertrag[i].PLZ, vers->Vertrag[i].Ort,
+					vers->Vertrag[i].Land);
+			if (!strcmp(neu, temp)) {
+				// Kunde existiert bereits
+				neuerKunde = false;
+				break; // Keine weiteren Vergleiche notwendig
+			}
+		} // if (nicht gelöscht)
 	}
-	vers->Vertrag[vers->i] = *v;
-	printf("Vertrag # %d an Stelle %d hinzugefügt (%s %s).\n", v->VertragsID,
-			vers->i, v->Vorname, v->Name);
-	return vers->i++;
+	if (neuerKunde) {
+		/*
+		 * Vertrag hinzufügen
+		 */
+		if (vers->i >= vers->sizeOfVertragArray) {
+			// Array vergrößern: http://stackoverflow.com/questions/4694401/how-to-replicate-vector-in-c
+			void* newMem = realloc(vers->Vertrag,
+					2 * vers->sizeOfVertragArray * sizeof(*v));
+			if (!newMem) {
+				printf(
+						"Fehler bei der Reservierung von zusätzlichem Speicher\n");
+				exit(EXIT_FAILURE);
+			}
+			vers->Vertrag = newMem;
+			vers->sizeOfVertragArray = 2 * vers->sizeOfVertragArray;
+			printf("Speicher Vergrößert auf %i.\n", vers->sizeOfVertragArray);
+		}
+		vers->Vertrag[vers->i] = *v;
+		printf("Vertrag # %d an Stelle %d hinzugefügt (%s %s).\n",
+				v->VertragsID, vers->i, v->Vorname, v->Name);
+		return vers->i++;
+	} // if (neuerKunde)
+	else {
+		printf("Kunde existiert bereits. VERTRAG NICHT HINZUGEFÜGT.\n");
+		return 0;
+	}
 }
 
 void delVertrag(versicherungstyp *vers, unsigned int vid) {
@@ -400,7 +440,7 @@ void kundenlisteAnzeigen(versicherungstyp *vers) {
 	bool empty = true;
 
 	char *temp;
-	char *kunden[vers->i][size];
+	char *kunden[vers->i][size + 1];
 	temp = malloc(size + 1);
 	/*
 	 * Kundenliste erzeugen
@@ -1130,8 +1170,7 @@ int alleDatenSpeichern(versicherungstyp *vers) {
 			}
 		} // for (Vertrag[i]
 	} else { // if (open)
-		printf(
-				"Fehler beim Öffnen der Datei. ");
+		printf("Fehler beim Öffnen der Datei. ");
 		waitAndClearScreen();
 		allesIstGut = false;
 	} // if (open)
@@ -1140,7 +1179,8 @@ int alleDatenSpeichern(versicherungstyp *vers) {
 		printf("\nDatei gespeichert.\n");
 		return (EXIT_SUCCESS);
 	} else {
-		printf("\nFehler beim Speichern. We appologize for your loss of data…\n");
+		printf(
+				"\nFehler beim Speichern. We appologize for your loss of data…\n");
 		return (EXIT_FAILURE);
 	}
 }
