@@ -44,7 +44,7 @@ enum monate {
 };
 
 typedef struct abrechnungstyp {
-	unsigned int Betrag;		// http://martinfowler.com/eaaDev/quantity.html
+	unsigned int Betrag;// In Cent! http://martinfowler.com/eaaDev/quantity.html
 	unsigned char FaelligMonat;		// 1 - 12
 	unsigned int FaelligJahr;		// ...wir haben ein Jahr-65.536-Problem...
 	enum zahlstatus Status;
@@ -79,7 +79,7 @@ typedef struct versicherungstyp {
  * Prototypen
  */
 int getNextVertragsID(versicherungstyp *);
-
+unsigned int addVertrag(versicherungstyp *, vertragstyp *);
 /*
  *  Implementation von Hilfsfunktionen
  */
@@ -170,7 +170,7 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 	/*
 	 * Hier werden die Werte aus der Datei gelesen bzw. eine leere „Instanz“ initialisiert.
 	 */
-	vertragstyp *vertrag; // Benötigt für sizeof()
+	vertragstyp *vertrag= malloc(sizeof(*vertrag));
 
 	vers->currentVertragsID = 0;
 	vers->sizeOfVertragArray = INITIAL_SIZE_OF_VERTRAG_ARRAY;
@@ -180,6 +180,20 @@ void versicherungstypConstructor(versicherungstyp *vers) {
 		exit(EXIT_FAILURE);
 	}
 	vers->i = 0;
+
+	FILE *fp;
+	if ((fp = fopen("vertrag.txt", "rb"))) {
+		// Erster Datensatz enthält die als nächstes zu vergebene VertragsID
+		fread(vertrag, sizeof(vertragstyp), 1, fp);
+		vers->currentVertragsID = vertrag->VertragsID;
+		do {
+			fread(vertrag, sizeof(vertragstyp), 1, fp);
+			addVertrag(vers, vertrag);
+		} while(!feof(fp));
+
+	} else {
+		printf("Datei 'vertrag.txt' nicht gefunden.\nLeere Vertragsdatenbank\n");
+	}
 }
 
 unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
@@ -197,7 +211,8 @@ unsigned int addVertrag(versicherungstyp *vers, vertragstyp *v) {
 		printf("Speicher Vergrößert auf %i.\n", vers->sizeOfVertragArray);
 	}
 	vers->Vertrag[vers->i] = *v;
-	printf("Vertrag # %d an Stelle %d hinzugefügt (%s %s).\n", v->VertragsID, vers->i, v->Vorname, v->Name);
+	printf("Vertrag # %d an Stelle %d hinzugefügt (%s %s).\n", v->VertragsID,
+			vers->i, v->Vorname, v->Name);
 	return vers->i++;
 }
 
@@ -1094,15 +1109,41 @@ void test(versicherungstyp *vers) {
 }
 
 int alleDatenSpeichern(versicherungstyp *vers) {
-	bool allesIstGut = false;
+	bool allesIstGut = true;
 
-	if(allesIstGut) {
-		return(EXIT_SUCCESS);
+	FILE *fp;
+	vertragstyp nummernull;
+
+	nummernull.VertragsID = vers->currentVertragsID;
+
+	if ((fp = fopen("vertrag.txt", "wb"))) {
+		if (!fwrite(&nummernull, sizeof(vertragstyp), 1, fp)) {
+			allesIstGut = false;
+		}
+		for (int i = 0; i < vers->i; i++) {
+			if (vers->Vertrag[i].VertragsID) { // ID <>0 -> nicht gelöscht
+				if (fwrite(&(vers->Vertrag[i]), sizeof(vertragstyp), 1, fp)) {
+					printf(".");
+				} else { // if (write vertrag)
+					allesIstGut = false;
+				}
+			}
+		} // for (Vertrag[i]
+	} else { // if (open)
+		printf(
+				"Fehler beim Öffnen der Datei. ");
+		waitAndClearScreen();
+		allesIstGut = false;
+	} // if (open)
+
+	if (allesIstGut) {
+		printf("\nDatei gespeichert.\n");
+		return (EXIT_SUCCESS);
 	} else {
-		return(EXIT_FAILURE);
+		printf("\nFehler beim Speichern. We appologize for your loss of data…\n");
+		return (EXIT_FAILURE);
 	}
 }
-
 
 /*
  * main()
